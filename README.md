@@ -1,20 +1,28 @@
-# agri-yield-predictor
-A Streamlit-based web app for predicting agricultural crop yield using an XGBoost regression pipeline trained on Indian crop data.
-# Agricultural Yield Prediction App
+# Agriculture Yield Predictor
 
-This is a Streamlit web application (ongoing project) that predicts the **crop yield (in tonnes/hectare)** based on the selected **crop**, **season**, and **district**. It uses a supervised machine learning model (XGBoost) trained on real Indian agriculture data.
+## Overview
 
-## 🔍 Features
+This project presents a machine learning model to accurately predict agricultural crop yields at a granular level using historical data from India. The model incorporates advanced data preprocessing, feature engineering, and gradient boosting techniques to capture complex relationships between crop types, seasons, districts, and temporal trends.
 
-- Predicts yield for multiple crops across Indian districts
-- Interactive dropdowns for crop, district, and season
-- Pretrained XGBoost pipeline with supervised F-value encoding
-- Fully deployable on Streamlit Cloud or locally (ongoing)
+The goal is to empower farmers, agricultural cooperatives, policymakers, and agri-businesses with reliable yield forecasts to optimize resource allocation, reduce financial risks, and improve food supply chain management.
 
-## 🧠 Machine Learning
+---
 
-- Model: XGBoost Regressor
-- Preprocessing: Custom F-value encoder (supervised)
-- Evaluation Metric: RMSE, R-squared
-- Input features: Crop, Season, District, Crop_Season
-- Output: Predicted yield in **tonnes/hectare**
+## Features
+
+- Data cleaning and handling of missing values and outliers
+- Feature engineering including ANOVA F-value encoding and crop-season interaction features
+- Handling of nonlinear relationships using tree-based models (XGBoost, Random Forest)
+- Hyperparameter tuning with RandomizedSearchCV
+- Model interpretability with SHAP values
+- Comprehensive evaluation using R², RMSE, and MAE metrics
+
+---
+
+## Dataset
+
+The dataset contains historical agricultural statistics with features such as:
+
+- State, District, Crop, Season, Year
+- Area cultivated, Production, and Yield values
+
