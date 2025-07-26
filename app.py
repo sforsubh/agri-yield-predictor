@@ -6,9 +6,46 @@ from sklearn.preprocessing import OneHotEncoder
 from xgboost import XGBRegressor
 from sklearn.feature_selection import f_regression
 
-# -----------------------------
-# Re-define your custom encoder
-# -----------------------------
+# ────────────────────────────────────────────────────
+# 1) CACHE THE DATA LOAD
+# ────────────────────────────────────────────────────
+@st.cache_data
+def load_data():
+    df = pd.read_excel(
+        "Indian Agriculture Dataset.xlsx",
+        engine="openpyxl",
+        usecols=["State","District","Crop","Season","Year","Yield"]
+    ).dropna()
+    for c in ['State','Crop','Season','District']:
+        df[c] = df[c].astype(str).str.strip().str.lower()
+    return df
+
+# ────────────────────────────────────────────────────
+# 2) CACHE THE MODEL LOAD
+# ────────────────────────────────────────────────────
+@st.cache_resource
+def load_model():
+    return joblib.load("yield_xgb_pipeline.pkl")
+
+# ────────────────────────────────────────────────────
+# 3) CACHE THE CASCADING OPTION BUILD
+# ────────────────────────────────────────────────────
+@st.cache_data
+def build_options(df):
+    # state → districts
+    state2d = df.groupby("State")["District"] \
+                .unique().apply(sorted).to_dict()
+    # (state,district) → seasons
+    sd2s = df.groupby(["State","District"])["Season"] \
+              .unique().apply(sorted).to_dict()
+    # (state,district,season) → crops
+    sds2c = df.groupby(["State","District","Season"])["Crop"] \
+               .unique().apply(sorted).to_dict()
+    return state2d, sd2s, sds2c
+
+# ────────────────────────────────────────────────────
+# 4) REDefine your custom encoder for unpickling
+# ────────────────────────────────────────────────────
 class FValueEncoder(BaseEstimator, TransformerMixin):
     def __init__(self, cols):
         self.cols = cols
@@ -28,63 +65,37 @@ class FValueEncoder(BaseEstimator, TransformerMixin):
             out[f"{col}_F"] = X2[col].map(self.maps_[col]).fillna(0)
         return out
 
-# -----------------------------
-# Load your trained pipeline
-# -----------------------------
-pipeline = joblib.load("yield_xgb_pipeline.pkl")
-
-# -----------------------------
-# Load and clean dataset for dropdowns
-# -----------------------------
-# new Excel load
-df = pd.read_excel(
-    "Indian Agriculture Dataset.xlsx",
-    engine="openpyxl",
-    usecols=["State","District","Crop","Season","Year","Yield"]
-).dropna()
-
-
-for c in ['State','Crop','Season','District']:
-    df[c] = df[c].astype(str).str.strip().str.lower()
-
-# -----------------------------
-# Streamlit UI
-# -----------------------------
+# ────────────────────────────────────────────────────
+# 5) MAIN APP
+# ────────────────────────────────────────────────────
 st.set_page_config(page_title="Yield Predictor", layout="centered")
-st.markdown("<h1 style='text-align:center;'>🌾Agricultural Yield Predictor</h1>",
+
+# Load once
+df     = load_data()
+pipeline = load_model()
+state2d, sd2s, sds2c = build_options(df)
+
+# UI Header
+st.markdown("<h1 style='text-align:center;'>🌾 Agricultural Yield Predictor</h1>",
             unsafe_allow_html=True)
-st.write("Predict the **crop yield (t/ha)** for any valid Crop–Season–District combination in Indian sub-continent.")
+st.write("Predict the **crop yield (t/ha)** for any valid Crop–Season–District combination in India.")
 
-# 1️⃣ State dropdown (for filtering)
-all_states = sorted(df['State'].unique())
-selected_state = st.selectbox("Select State", all_states)
+# Cascading dropdowns
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    selected_state = st.selectbox("Select State", list(state2d.keys()))
+with col2:
+    districts = state2d.get(selected_state, [])
+    selected_district = st.selectbox("Select District", districts)
+with col3:
+    seasons = sd2s.get((selected_state, selected_district), [])
+    selected_season = st.selectbox("Select Season", seasons)
+with col4:
+    crops = sds2c.get((selected_state, selected_district, selected_season), [])
+    selected_crop = st.selectbox("Select Crop", crops)
 
-# 2️⃣ District filtered by State
-districts = sorted(df[df['State']==selected_state]['District'].unique())
-selected_district = st.selectbox("Select District", districts)
-
-# 3️⃣ Season filtered by State+District
-seasons = sorted(
-    df[(df['State']==selected_state) & 
-       (df['District']==selected_district)]['Season']
-    .unique()
-)
-selected_season = st.selectbox("Select Season", seasons)
-
-# 4️⃣ Crop filtered by State+District+Season
-crops = sorted(
-    df[(df['State']==selected_state) &
-       (df['District']==selected_district) &
-       (df['Season']==selected_season)]['Crop']
-    .unique()
-)
-selected_crop = st.selectbox("Select Crop", crops)
-
-# -----------------------------
-# Predict button
-# -----------------------------
+# Predict
 if st.button("Predict Yield"):
-    # Build the single-row DataFrame that your pipeline expects
     row = {
         'Crop': selected_crop,
         'Season': selected_season,
@@ -93,18 +104,12 @@ if st.button("Predict Yield"):
     }
     input_df = pd.DataFrame([row])
 
-    # ➊ Defensive check: ensure encoder saw all categories
+    # Defensive check
     encoder = pipeline.named_steps['fval']
-    missing = [
-        col for col in encoder.cols
-        if row[col] not in encoder.maps_[col]
-    ]
+    missing = [c for c in encoder.cols if row[c] not in encoder.maps_[c]]
     if missing:
         st.error(f"❌ Cannot predict: missing categories for {missing}")
-        st.stop()
-
-    # ➋ Predict and clamp at zero
-    raw_pred = pipeline.predict(input_df)[0]
-    pred = max(0.0, raw_pred)
-
-    st.success(f"🌾Predicted Yield: **{pred:.2f} t/ha**")
+    else:
+        raw_pred = pipeline.predict(input_df)[0]
+        pred = max(0.0, raw_pred)
+        st.success(f"🌾 Predicted Yield: **{pred:.2f} t/ha**")
