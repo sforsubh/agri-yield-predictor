@@ -36,9 +36,13 @@ pipeline = joblib.load("yield_xgb_pipeline.pkl")
 # -----------------------------
 # Load and clean dataset for dropdowns
 # -----------------------------
-df = pd.read_csv("Indian Agriculture Dataset.csv")[
-    ['State','Crop','Season','District','Yield']
-].dropna()
+# new Excel load
+df = pd.read_excel(
+    "Indian Agriculture Dataset.xlsx",
+    engine="openpyxl",
+    usecols=["State","District","Crop","Season","Year","Yield"]
+).dropna()
+
 
 for c in ['State','Crop','Season','District']:
     df[c] = df[c].astype(str).str.strip().str.lower()
