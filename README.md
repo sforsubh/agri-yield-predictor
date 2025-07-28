@@ -10,12 +10,12 @@ The goal is to empower farmers, agricultural cooperatives, policymakers, and agr
 
 ## Features
 
-- Data cleaning and handling of missing values and outliers
-- Feature engineering including ANOVA F-value encoding and crop-season interaction features
-- Handling of nonlinear relationships using tree-based models (XGBoost, Random Forest)
-- Hyperparameter tuning with RandomizedSearchCV
-- Model interpretability with SHAP values
-- Comprehensive evaluation using R², RMSE, and MAE metrics
+- Data cleaning and handling of missing values and outliers  
+- Feature engineering including ANOVA F-value encoding and crop–season interaction features  
+- Handling of nonlinear relationships using tree-based models (XGBoost, Random Forest)  
+- Hyperparameter tuning with RandomizedSearchCV  
+- Model interpretability with SHAP values  
+- Comprehensive evaluation using R², RMSE, and MAE metrics  
 
 ---
 
@@ -23,6 +23,20 @@ The goal is to empower farmers, agricultural cooperatives, policymakers, and agr
 
 The dataset contains historical agricultural statistics with features such as:
 
-- State, District, Crop, Season, Year
-- Area cultivated, Production, and Yield values
+- State, District, Crop, Season, Year  
+- Area cultivated, Production, and Yield values  
 
+---
+
+## Live Deployment
+
+The fully trained XGBoost pipeline is now live on our hosted site **কৃshi** (krishi)!  
+
+🔗 **Try it out now:**  
+https://sites.google.com/view/krishi-ml
+
+This Streamlit-based web app lets you select **State → District → Season → Crop** and instantly see your **predicted yield (t/ha)**.  
+
+---
+
+_This is a student-led, educational project under fair-use. Not for commercial use._  
